@@ -1,0 +1,137 @@
+<!-- app/templates/dashboard.html -->
+{% extends "base.html" %}
+
+{% block title %}Dashboard - LSTM Spam Detector{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Dashboard</h1>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Total Emails</h5>
+                <h2 class="text-primary">{{ total_emails }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Predictions Made</h5>
+                <h2 class="text-info">{{ total_predictions }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Spam Detected</h5>
+                <h2 class="text-danger">{{ spam_count }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Ham Emails</h5>
+                <h2 class="text-success">{{ ham_count }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Predictions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Predictions</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_predictions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Subject</th>
+                                    <th>Prediction</th>
+                                    <th>Confidence</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for prediction, email in recent_predictions %}
+                                    <tr>
+                                        <td>{{ email.subject[:50] + '...' if email.subject and email.subject|length > 50 else email.subject or 'No Subject' }}</td>
+                                        <td>
+                                            <span class="badge {{ 'spam-badge' if prediction.predicted_label == 'spam' else 'ham-badge' }}">
+                                                {{ prediction.predicted_label.upper() }}
+                                            </span>
+                                        </td>
+                                        <td>{{ "%.1f"|format(prediction.confidence_score * 100) }}%</td>
+                                        <td>{{ prediction.prediction_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No predictions yet. <a href="{{ url_for('main.check_email') }}">Check your first email</a>!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <a href="{{ url_for('main.check_email') }}" class="btn btn-primary btn-lg w-100">
+                            <i class="bi bi-envelope-check"></i> Check New Email
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{{ url_for('main.email_history') }}" class="btn btn-outline-primary btn-lg w-100">
+                            <i class="bi bi-clock-history"></i> View History
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-outline-secondary btn-lg w-100" onclick="refreshStats()">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh Stats
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function refreshStats() {
+    fetch('/api/stats')
+        .then(response => response.json())
+        .then(data => {
+            location.reload();
+        })
+        .catch(error => {
+            console.error('Error refreshing stats:', error);
+            alert('Error refreshing statistics');
+        });
+}
+</script>
+{% endblock %}
